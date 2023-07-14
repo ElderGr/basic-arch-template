@@ -1,8 +1,8 @@
 version: "3"
 
 services:
-  leafchat-database:
-    container_name: leafchat-database
+  app-database:
+    container_name: app-database
     image: postgres:13-alpine
     ports:
       - 5432:5432
@@ -12,25 +12,30 @@ services:
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
-      POSTGRES_DB: leafchat
+      POSTGRES_DB: app
     volumes:
-      - /usr/local/leafchat-pg/data:/var/lib/postgresql/data
+      - /usr/local/app-pg/data:/var/lib/postgresql/data
     networks:
-      - leafchat-network
-
-  leafchat-mongodb:
-    container_name: leafchat-mongodb
-    image: mongo
-    ports:
-      - 27017:27017
+      - app-network
+  
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '5'
+    working_dir: /usr/src/app
+    command: bash -c "npx prisma generate && npm run migration:run && npm run start"
+    restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: root
-    volumes:
-      - /usr/local/leafchat-mongodb/data:/var/lib/mongodb/data
-    networks:
-      - leafchat-network
+      NODE_ENV: production
+      DATABASE_URL: ''
+      JWT_SECRET: ''
 
 networks:
-  leafchat-network:
+  app-network:
     driver: bridge
